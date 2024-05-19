@@ -1,0 +1,13 @@
+---
+
+collections:
+  - name: community.docker
+
+roles:
+  - name: docker
+    src: https://github.com/KirillSilianovO/ansible_role_docker
+    version: "0.0.2"
+
+  - name: traefik
+    src: https://github.com/KirillSilianovO/ansible_role_traefik
+    version: "0.0.3"

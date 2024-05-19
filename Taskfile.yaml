@@ -32,8 +32,8 @@ tasks:
   run:
     vars:
       TAGS: ""
-    deps:
-      - .pre
+    #deps:
+    #  - .pre
     cmd: |
       docker run -it --rm \
       -v {{ .PWD }}/configuration:/workdir \
@@ -43,4 +43,4 @@ tasks:
       -e SSH_USER={{ .SSH_USER }} \
       -e SSH_BECOME_PASS={{ .SSH_BECOME_PASS }} \
       --name {{ .DEPLOY_CONTAINER_NAME }} \
-      {{ .DEPLOY_IMAGE }} ansible-playbook /workdir/deploy.yaml -i /workdir/inventory.yaml {{ .TAGS }}
+      {{ .DEPLOY_IMAGE }} /workdir/run.sh
