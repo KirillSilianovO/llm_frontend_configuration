@@ -1,0 +1,6 @@
+---
+
+- name: Deploy
+  hosts: server
+  roles:
+    - common
