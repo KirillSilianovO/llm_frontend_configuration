@@ -1,0 +1,210 @@
+---
+
+- name: Python mongo libraries installed
+  ansible.builtin.command:
+    cmd: "pip3 install pymongo --break-system-packages"
+
+- name: Python passlib libraries installed
+  ansible.builtin.command:
+    cmd: "pip3 install passlib --break-system-packages"
+
+- name: Packages installed
+  ansible.builtin.apt:
+    name:
+      - gnupg
+    state: present
+
+- name: Added mongo APT key
+  ansible.builtin.get_url:
+    url: https://www.mongodb.org/static/pgp/server-7.0.asc
+    dest: "{{ mongo_apt_keyring }}"
+
+- name: Added mongo repository
+  ansible.builtin.apt_repository:
+    repo: "deb [ arch=amd64 signed-by={{ mongo_apt_keyring }}] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main"
+    filename: /etc/apt/sources.list.d/mongodb-org-7.0.list
+    state: present
+    update_cache: true
+
+- name: MongoSH installed
+  ansible.builtin.apt:
+    name:
+      - mongodb-mongosh
+    state: present
+    update_cache: true
+
+- name: Directories exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ libre_chat_app_dir }}"
+    - "{{ libre_chat_data_dir }}"
+    - "{{ libre_chat_images_dir }}"
+    - "{{ libre_chat_logs_dir }}"
+    - "{{ libre_chat_vectordb_dir }}"
+    - "{{ libre_chat_vectordb_data_dir }}"
+    - "{{ libre_chat_mongodb_dir }}"
+    - "{{ libre_chat_mongodb_data_dir }}"
+    - "{{ libre_chat_mongodb_scripts_dir }}"
+    - "{{ libre_chat_ms_data_dir }}"
+
+- name: Configuration file created from template
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ libre_chat_app_config_file }}"
+    mode: 0600
+
+- name: API Configuration file created from template
+  ansible.builtin.template:
+    src: librechat.yaml.j2
+    dest: "{{ libre_chat_config_file }}"
+    mode: 0600
+
+- name: Chat users file created from template
+  ansible.builtin.template:
+    src: users.js.j2
+    dest: "{{ libre_chat_mongodb_user_script_file }}"
+    mode: 0600
+
+- name: VectorDB container started
+  community.docker.docker_container:
+    name: "{{ libre_chat_vectordb_container_name }}"
+    hostname: "{{ libre_chat_vectordb_container_name }}"
+    image: "{{ libre_chat_vectordb_image }}"
+    restart_policy: always
+    ports:
+      - "5432:5432"
+    mounts:
+      - type: bind
+        source: "{{ libre_chat_vectordb_data_dir }}"
+        target: /var/lib/postgresql/data
+    env:
+      POSTGRES_DB: "{{ libre_chat_vectordb_db_name }}"
+      POSTGRES_USER: "{{ libre_chat_vectordb_user_name }}"
+      POSTGRES_PASSWORD: "{{ libre_chat_vectordb_password }}"
+    recreate: true
+    state: started
+
+- name: MongoDB container started
+  community.docker.docker_container:
+    name: "{{ libre_chat_mongodb_container_name }}"
+    hostname: "{{ libre_chat_mongodb_container_name }}"
+    image: "{{ libre_chat_mongodb_image }}"
+    restart_policy: always
+    ports:
+      - "27017:27017"
+    mounts:
+      - type: bind
+        source: "{{ libre_chat_mongodb_data_dir }}"
+        target: /data/db
+    env:
+      MONGO_INITDB_ROOT_USERNAME: "{{ mongodb_root_user }}"
+      MONGO_INITDB_ROOT_PASSWORD: "{{ mongodb_root_password }}"
+    recreate: true
+    state: started
+
+- name: MongoDB database and user created
+  community.mongodb.mongodb_user:
+    login_user: "{{ mongodb_root_user }}"
+    login_password: "{{ mongodb_root_password }}"
+    name: "{{ mongodb_user }}"
+    password: "{{ mongodb_password }}"
+    database: "{{ libre_chat_mongodb_db_name }}"
+    roles:
+      - readWrite
+    state: present
+    update_password: always
+  register: db_user_creation
+  until: db_user_creation is succeeded
+  retries: 3
+  delay: 10
+  failed_when: db_user_creation is failure
+
+- name: MeiliSearch container started
+  community.docker.docker_container:
+    name: "{{ libre_chat_ms_container_name }}"
+    hostname: "{{ libre_chat_ms_container_name }}"
+    image: "{{ libre_chat_ms_image }}"
+    restart_policy: always
+    mounts:
+      - type: bind
+        source: "{{ libre_chat_ms_data_dir }}"
+        target: /meili_data
+    env_file: "{{ libre_chat_app_config_file }}"
+    recreate: true
+    state: started
+
+- name: RAG api container started
+  community.docker.docker_container:
+    name: "{{ libre_chat_rag_api_container_name }}"
+    image: "{{ libre_chat_rag_api_image }}"
+    restart_policy: always
+    env_file: "{{ libre_chat_app_config_file }}"
+    env:
+      DB_HOST: "{{ libre_chat_vectordb_container_name }}"
+      RAG_PORT: "8000"
+      POSTGRES_USER: "{{ libre_chat_vectordb_user_name }}"
+      POSTGRES_PASSWORD: "{{ libre_chat_vectordb_password }}"
+      POSTGRES_DB: "{{ libre_chat_vectordb_db_name }}"
+    recreate: true
+    state: started
+
+- name: Libre Chat Api Started
+  community.docker.docker_container:
+    name: "{{ libre_chat_api_container_name }}"
+    hostname: "{{ libre_chat_api_container_name }}"
+    image: "{{ libre_chat_api_image }}"
+    restart_policy: always
+    user: "0"
+    groups: "0"
+    mounts:
+      - type: bind
+        source: "{{ libre_chat_config_file }}"
+        target: /app/librechat.yaml
+      - type: bind
+        source: "{{ libre_chat_images_dir }}"
+        target: /app/client/public/images
+      - type: bind
+        source: "{{ libre_chat_logs_dir }}"
+        target: /app/api/logs
+    env_file: "{{ libre_chat_app_config_file }}"
+    env:
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      MONGO_URI: "{{ libre_chat_mongodb_uri }}"
+      MEILI_HOST: "{{ libre_chat_ms_uri }}"
+      RAG_PORT: "{{ libre_chat_rag_api_port }}"
+      RAG_API_URL: "{{ libre_chat_rag_api_uri }}"
+
+    recreate: true
+    state: started
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.librechat.rule: "Host(`{{ libre_chat_url }}`)"
+      traefik.http.routers.librechat.tls: "true"
+      traefik.http.routers.librechat.tls.certresolver: letsEncryptResolver
+      traefik.http.routers.librechat.entrypoints: websecure
+      traefik.http.services.librechat.loadbalancer.server.port: "{{ libre_chat_api_port }}"
+
+- name: Pause for 30 seconds for chat api started
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Chat users created
+  community.mongodb.mongodb_shell:
+    login_user: "{{ mongodb_root_user }}"
+    login_password: "{{ mongodb_root_password }}"
+    file: "{{ libre_chat_mongodb_user_script_file }}"
+
+- name: LibreChat network created
+  community.docker.docker_network:
+    name: "{{ libre_chat_app_network_name }}"
+    connected:
+      - "{{ libre_chat_vectordb_container_name }}"
+      - "{{ libre_chat_mongodb_container_name }}"
+      - "{{ libre_chat_ms_container_name }}"
+      - "{{ libre_chat_rag_api_container_name }}"
+      - "{{ libre_chat_api_container_name }}"
+    appends: true
+  changed_when: false

@@ -2,9 +2,6 @@
 
 version: 3
 
-includes:
-  ext_vars: "./.variables.yaml"
-
 vars:
   PWD:
     sh: pwd
@@ -21,6 +18,24 @@ tasks:
     deps:
       - ".set_private_key_mode"
 
+  .run_deploy_container:
+    cmds:
+      - docker container stop {{ .DEPLOY_CONTAINER_NAME }} || true
+      - docker container rm {{ .DEPLOY_CONTAINER_NAME }} || true
+      - |
+        docker run -d \
+        -v {{ .PWD }}/configuration:/workdir \
+        -v {{ .PWD }}/ansible.cfg:/etc/ansible/ansible.cfg \
+        -v {{ .PWD}}/.users.yaml:/workdir/users.yaml \
+        --env-file {{ .PWD }}/.env \
+        --name {{ .DEPLOY_CONTAINER_NAME }} {{ .DEPLOY_IMAGE }} tail -f /dev/null
+      - docker container exec -it {{ .DEPLOY_CONTAINER_NAME }} ansible-galaxy install -r requirements.yaml
+
+  .stop_deploy_container:
+    cmds:
+      - docker container stop {{ .DEPLOY_CONTAINER_NAME }}
+      - docker container rm {{ .DEPLOY_CONTAINER_NAME }}
+
   lint:
     cmd: |
       docker run -it --rm \
@@ -32,15 +47,12 @@ tasks:
   run:
     vars:
       TAGS: ""
-    #deps:
-    #  - .pre
-    cmd: |
-      docker run -it --rm \
-      -v {{ .PWD }}/configuration:/workdir \
-      -v {{ .PWD }}/ansible.cfg:/etc/ansible/ansible.cfg \
-      -e SSH_HOST={{ .SSH_HOST }} \
-      -e SSH_PORT={{ .SSH_PORT }} \
-      -e SSH_USER={{ .SSH_USER }} \
-      -e SSH_BECOME_PASS={{ .SSH_BECOME_PASS }} \
-      --name {{ .DEPLOY_CONTAINER_NAME }} \
-      {{ .DEPLOY_IMAGE }} /workdir/run.sh
+    deps:
+      - .pre
+      - .run_deploy_container
+    cmds:
+      - |
+        docker container exec -it {{ .DEPLOY_CONTAINER_NAME }} \
+        ansible-playbook /workdir/deploy.yaml -i /workdir/inventory.yaml --extra-vars @users.yaml {{ .TAGS }}
+      - defer:
+          task: .stop_deploy_container

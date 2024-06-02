@@ -1,7 +1,7 @@
 ---
 
 - name: Packages installed
-  ansible.builtin.packages:
+  ansible.builtin.apt:
     name:
       - python3
       - python3-pip

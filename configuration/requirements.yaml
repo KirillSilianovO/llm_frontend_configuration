@@ -2,6 +2,7 @@
 
 collections:
   - name: community.docker
+  - name: community.mongodb
 
 roles:
   - name: docker

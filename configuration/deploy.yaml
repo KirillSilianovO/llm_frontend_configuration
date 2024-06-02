@@ -3,4 +3,7 @@
 - name: Deploy
   hosts: server
   roles:
-    - common
+    #- common
+    #- docker
+    #- traefik
+    - libre_chat

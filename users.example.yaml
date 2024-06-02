@@ -1,0 +1,8 @@
+---
+
+chat_users:
+  - name: Name
+    email: example@example.ru
+    password: Password
+    role: Role
+    username: Username

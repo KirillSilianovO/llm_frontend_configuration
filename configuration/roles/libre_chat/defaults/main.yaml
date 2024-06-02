@@ -1,0 +1,52 @@
+---
+
+mongo_apt_keyring: "/etc/apt/keyrings/mongo.asc"
+
+libre_chat_app_network_name: "librechat_network"
+
+libre_chat_api_image: "librechat/librechat:v{{ libre_chat_api_version }}"
+libre_chat_api_container_name: "librechat"
+libre_chat_api_port: "3080"
+
+libre_chat_vectordb_image: "ankane/pgvector:v{{ libre_chat_vectordb_version }}"
+libre_chat_vectordb_container_name: "vectordb"
+libre_chat_vectordb_db_name: ""
+libre_chat_vectordb_user_name: "{{ vector_db_user }}"
+libre_chat_vectordb_password: "{{ vector_db_password }}"
+
+libre_chat_mongodb_version: "7.0.9"
+libre_chat_mongodb_image: "mongo:{{ libre_chat_mongodb_version }}"
+libre_chat_mongodb_container_name: "chat-mongodb"
+libre_chat_mongodb_db_name: "LibreChat"
+libre_chat_mongodb_uri: "mongodb://{{ mongodb_user }}:{{ mongodb_password }}@{{ libre_chat_mongodb_container_name }}:27017/{{ libre_chat_mongodb_db_name }}"
+libre_chat_ms_version: "1.8.0"
+libre_chat_ms_image: "getmeili/meilisearch:v{{ libre_chat_ms_version }}"
+libre_chat_ms_container_name: "chat-meilisearch"
+libre_chat_ms_port: "7700"
+libre_chat_ms_uri: "http://{{ libre_chat_ms_container_name }}:{{ libre_chat_ms_port }}"
+
+libre_chat_rag_api_version: "latest"
+libre_chat_rag_api_image: "ghcr.io/danny-avila/librechat-rag-api-dev-lite:{{ libre_chat_rag_api_version }}"
+libre_chat_rag_api_container_name: "rag_api"
+libre_chat_rag_api_port: "8000"
+libre_chat_rag_api_uri: "http://{{ libre_chat_rag_api_container_name }}:{{ libre_chat_rag_api_port }}"
+
+libre_chat_app_dir: "{{ apps_root_dir }}/libre_chat"
+libre_chat_app_config_file: "{{ libre_chat_app_dir }}/.env"
+libre_chat_data_dir: "{{ libre_chat_app_dir }}/libre_chat_data"
+libre_chat_config_file: "{{ libre_chat_data_dir }}/librechat.yaml"
+libre_chat_proxy_config_file: "{{ libre_chat_data_dir }}/nginx.conf"
+libre_chat_images_dir: "{{ libre_chat_data_dir }}/images"
+libre_chat_logs_dir: "{{ libre_chat_data_dir }}/logs"
+
+libre_chat_vectordb_dir: "{{ libre_chat_app_dir }}/vectordb"
+libre_chat_vectordb_data_dir: "{{ libre_chat_vectordb_dir }}/data"
+
+libre_chat_mongodb_dir: "{{ libre_chat_app_dir }}/mongodb"
+libre_chat_mongodb_data_dir: "{{ libre_chat_mongodb_dir }}/data"
+libre_chat_mongodb_scripts_dir: "{{ libre_chat_mongodb_dir }}/scripts"
+libre_chat_mongodb_user_script_file: "{{ libre_chat_mongodb_scripts_dir }}/users.js"
+
+libre_chat_ms_dir: "{{ libre_chat_app_dir }}/meilisearch"
+libre_chat_ms_data_dir: "{{ libre_chat_ms_dir }}/data"
+

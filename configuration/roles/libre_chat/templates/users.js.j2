@@ -1,0 +1,27 @@
+db = db.getSiblingDB('{{ libre_chat_mongodb_db_name }}');
+
+var document = {}
+
+{% for user in chat_users %}
+document = {
+  "avatar": null,
+  "createdAt": new Date(),
+  "email": "{{ user.email }}",
+  "emailVerified": true,
+  "name": "{{ user.name }}",
+  "password": "{{ user.password | password_hash('bcrypt') }}",
+  "plugins": [],
+  "provider": "local",
+  "refreshToken": [],
+  "role": "{{ user.role }}",
+  "updatedAt": new Date(),
+  "username": "{{ user.username }}",
+};
+
+db.users.updateOne(
+  { email: document.email },
+  { $set: document },
+  { upsert: true }
+);
+
+{% endfor %}
