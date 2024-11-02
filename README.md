@@ -25,4 +25,8 @@ using `taskfile run`.
 2. Set your variables in `./.env`
 3. Create `configuration/private_key.pem` file and copy your private key into it
 4. Copy `users.example.yaml` to `.users.yaml` and set your users for the chat 
-5. Run `taskfile run` to run the playbook
+5. Run
+```shell
+task run
+```
+to run the playbook

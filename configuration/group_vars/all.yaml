@@ -7,11 +7,12 @@ traefik_dashboard_host_name: traefik.ksilianov.pro
 traefik_acme_email: kirill.silianov@proton.me
 
 libre_chat_url: chat.ksilianov.pro
-libre_chat_api_version: "0.7.2"
+libre_chat_api_version: "0.7.5"
 
-libre_chat_vectordb_version: "0.5.0"
+libre_chat_vectordb_version: "0.5.1"
 
 open_ai_token: "{{ lookup('ansible.builtin.env', 'OPEN_AI_TOKEN') }}"
+anthropic_token: "{{ lookup('ansible.builtin.env', 'ANTHROPIC_TOKEN') }}"
 
 mongodb_root_user: "{{ lookup('ansible.builtin.env', 'MONGODB_ROOT_USER') }}"
 mongodb_root_password: "{{ lookup('ansible.builtin.env', 'MONGODB_ROOT_PASSWORD') }}"

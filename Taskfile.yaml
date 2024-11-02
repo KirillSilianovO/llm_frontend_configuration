@@ -6,8 +6,8 @@ vars:
   PWD:
     sh: pwd
   DEPLOY_CONTAINER_NAME: "deploy-container"
-  DEPLOY_IMAGE_NAME: "kirillsilianov/deploy-image"
-  DEPLOY_IMAGE_VERSION: "2.1"
+  DEPLOY_IMAGE_NAME: "kirillsilianov/deploy_image"
+  DEPLOY_IMAGE_VERSION: "3.0.2"
   DEPLOY_IMAGE: "{{ .DEPLOY_IMAGE_NAME }}:{{ .DEPLOY_IMAGE_VERSION }}"
 
 tasks:

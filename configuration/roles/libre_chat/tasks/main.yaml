@@ -1,12 +1,12 @@
 ---
 
-- name: Python mongo libraries installed
-  ansible.builtin.command:
-    cmd: "pip3 install pymongo --break-system-packages"
-
-- name: Python passlib libraries installed
-  ansible.builtin.command:
-    cmd: "pip3 install passlib --break-system-packages"
+- name: Python packages installed
+  ansible.builtin.pip:
+    name:
+      - pymongo
+      - passlib
+    state: present
+    break_system_packages: true
 
 - name: Packages installed
   ansible.builtin.apt:
